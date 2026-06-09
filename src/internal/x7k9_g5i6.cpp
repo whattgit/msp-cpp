@@ -10,9 +10,19 @@ constexpr const char* kClientId = "unity.client";
 constexpr const char* kClientSecret = "secret";
 constexpr const char* kBasicAuth = "dW5pdHkuY2xpZW50OnNlY3JldA==";
 constexpr const char* kMsp1GameId = "5ooi";
-constexpr const char* kTokenHost = "eu-secure.mspapis.com";
 constexpr const char* kTokenPath = "/loginidentity/connect/token";
-constexpr const char* kProfileHost = "eu.mspapis.com";
+
+bool nebula_is_us_region(const std::string& server_upper) {
+    return server_upper == "US" || server_upper == "CA" || server_upper == "AU" || server_upper == "NZ";
+}
+
+const char* nebula_token_host(const std::string& server_upper) {
+    return nebula_is_us_region(server_upper) ? "us-secure.mspapis.com" : "eu-secure.mspapis.com";
+}
+
+const char* nebula_profile_host(const std::string& server_upper) {
+    return nebula_is_us_region(server_upper) ? "us.mspapis.com" : "eu.mspapis.com";
+}
 
 std::map<std::string, std::string> nebula_browser_headers() {
     return {
@@ -73,6 +83,8 @@ X7A1 x7k9_w2q8(const std::string& server, const std::string& username, const std
         ch = static_cast<char>(std::toupper(static_cast<unsigned char>(ch)));
     }
     const std::string nebula_username = server_upper + "|" + username;
+    const char* token_host = nebula_token_host(server_upper);
+    const char* profile_host = nebula_profile_host(server_upper);
 
     auto password_headers = nebula_browser_headers();
     password_headers["Content-Type"] = "application/x-www-form-urlencoded";
@@ -88,7 +100,7 @@ X7A1 x7k9_w2q8(const std::string& server, const std::string& username, const std
     });
 
     const X7H6 password_response = http.post(
-        kTokenHost,
+        token_host,
         kTokenPath,
         std::vector<uint8_t>(password_body.begin(), password_body.end()),
         password_headers,
@@ -113,7 +125,7 @@ X7A1 x7k9_w2q8(const std::string& server, const std::string& username, const std
     auto profile_headers = nebula_browser_headers();
     profile_headers["Authorization"] = "Bearer " + initial_access_token;
     const X7H6 profile_response = http.get(
-        kProfileHost,
+        profile_host,
         "/profileidentity/v1/logins/" + login_id + "/profiles",
         profile_headers,
         true);
@@ -139,7 +151,7 @@ X7A1 x7k9_w2q8(const std::string& server, const std::string& username, const std
     });
 
     const X7H6 refresh_response = http.post(
-        kTokenHost,
+        token_host,
         kTokenPath,
         std::vector<uint8_t>(refresh_body.begin(), refresh_body.end()),
         refresh_headers,
